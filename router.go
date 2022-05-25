@@ -6,6 +6,9 @@ import (
 )
 
 func initRouter(r *gin.Engine) {
+	// connect to MySQL database
+	controller.ConnectDB()
+
 	// public directory is used to serve static resources
 	r.Static("/static", "./public")
 
