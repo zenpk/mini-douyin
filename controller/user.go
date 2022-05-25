@@ -47,7 +47,7 @@ func Register(c *gin.Context) {
 	passwordHash, _ := BCryptPassword(password) // 对密码加密，不保存明文
 	// 根据用户名的唯一性，查找是否存在该用户，如果不存在则将用户信息存入数据库中
 	findUser := User{Name: username}
-	if rowsAffected := DB.First(&findUser).RowsAffected; rowsAffected != 0 {
+	if rowsAffected := DB.Where("name = ?", username).First(&findUser).RowsAffected; rowsAffected != 0 {
 		c.JSON(http.StatusOK, UserLoginResponse{
 			Response: Response{StatusCode: 1, StatusMsg: "User already exists"},
 		})
@@ -73,7 +73,7 @@ func Login(c *gin.Context) {
 
 	// 查找数据库中对应的用户名，并检查密码
 	findUser := User{Name: username}
-	if rowsAffected := DB.First(&findUser).RowsAffected; rowsAffected != 0 {
+	if rowsAffected := DB.Where("name = ?", username).First(&findUser).RowsAffected; rowsAffected != 0 {
 		passwordHashByte := []byte(findUser.Password)
 		passwordByte := []byte(password)
 		// 检查密码是否正确，使用 BCrypt 内置的比较函数
@@ -97,7 +97,7 @@ func Login(c *gin.Context) {
 }
 
 func UserInfo(c *gin.Context) {
-	userId := c.Query("UserId")
+	userId := c.Query("user_id")
 	Id, _ := strconv.ParseInt(userId, 10, 64)
 	// demo 这里判断了 user 是否存在，但个人认为不用，因此省去
 	findUser := User{Id: Id}
