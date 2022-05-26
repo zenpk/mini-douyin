@@ -12,25 +12,13 @@ type FeedResponse struct {
 	NextTime  int64   `json:"next_time,omitempty"`
 }
 
-// Feed same demo video list for every request
+// Feed 推送最新的 30 个视频
 func Feed(c *gin.Context) {
+	var videoList []Video
+	DB.Limit(30).Order("id desc").Find(&videoList)
 	c.JSON(http.StatusOK, FeedResponse{
 		Response:  Response{StatusCode: 0},
-		VideoList: DemoVideos,
+		VideoList: videoList,
 		NextTime:  time.Now().Unix(),
 	})
 }
-
-//func GetVideoList() {
-//	var demo = []Video{
-//		{
-//			Id:            1,
-//			Author:        DemoUser,
-//			PlayUrl:       "../public/bear.mp4",
-//			CoverUrl:      "https://cdn.pixabay.com/photo/2016/03/27/18/10/bear-1283347_1280.jpg",
-//			FavoriteCount: 0,
-//			CommentCount:  0,
-//			IsFavorite:    false,
-//		}}
-//
-//}
