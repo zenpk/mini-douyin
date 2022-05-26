@@ -15,7 +15,7 @@ type FeedResponse struct {
 // Feed 推送最新的 30 个视频
 func Feed(c *gin.Context) {
 	var videoList []Video
-	DB.Limit(30).Order("id desc").Find(&videoList)
+	DB.Preload("Author").Order("id desc").Limit(30).Find(&videoList)
 	c.JSON(http.StatusOK, FeedResponse{
 		Response:  Response{StatusCode: 0},
 		VideoList: videoList,
