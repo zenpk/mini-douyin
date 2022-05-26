@@ -6,11 +6,11 @@ type Response struct {
 }
 
 type Video struct {
-	Id            int64  `json:"id,omitempty"`
+	Id            int64  `json:"id,omitempty" gorm:"primaryKey"`
 	Author        User   `json:"author" gorm:"foreignKey:UserId"`
-	UserId        int64  `gorm:"not null"` // 该视频作者的唯一标志
-	PlayUrl       string `json:"play_url" json:"play_url,omitempty"`
-	CoverUrl      string `json:"cover_url,omitempty"`
+	UserId        int64  `gorm:"not null"` // 视频对应的用户 Id
+	PlayUrl       string `json:"play_url" json:"play_url,omitempty" gorm:"not null"`
+	CoverUrl      string `json:"cover_url,omitempty" gorm:"not null"`
 	FavoriteCount int64  `json:"favorite_count,omitempty"`
 	CommentCount  int64  `json:"comment_count,omitempty"`
 	IsFavorite    bool   `json:"is_favorite,omitempty"`
@@ -19,11 +19,11 @@ type Video struct {
 type Comment struct {
 	Id         int64  `json:"id,omitempty" gorm:"primaryKey"`
 	User       User   `json:"user" gorm:"foreignKey:UserId"`
-	UserId     int64  `gorm:"not null"`           // 该评论作者的唯一标志
-	Video      Video  `gorm:"foreignKey:VideoId"` // 不知是否有必要？
-	VideoId    int64  `gorm:"not null"`           // 评论对应的视频 Id
-	Content    string `json:"content,omitempty"`
-	CreateDate string `json:"create_date,omitempty"`
+	UserId     int64  `gorm:"not null"` // 评论对应的用户 Id
+	Video      Video  `gorm:"foreignKey:VideoId"`
+	VideoId    int64  `gorm:"not null"` // 评论对应的视频 Id
+	Content    string `json:"content,omitempty" gorm:"not null"`
+	CreateDate string `json:"create_date,omitempty" gorm:"not null"`
 }
 
 type User struct {
@@ -32,5 +32,18 @@ type User struct {
 	Password      string `gorm:"not null"`
 	FollowCount   int64  `json:"follow_count,omitempty"`
 	FollowerCount int64  `json:"follower_count,omitempty"`
-	IsFollow      bool   `json:"is_follow,omitempty"` // 意义不明？是否应当另建 follows 表和 followers 表？
+	IsFollow      bool   `json:"is_follow,omitempty"`
+}
+
+// Favorite 记录用户点赞的视频
+type Favorite struct {
+	Id      int64 `gorm:"primaryKey"`
+	User    User  `gorm:"foreignKey:UserId"`
+	UserId  int64 `gorm:"not null"`
+	Video   Video `gorm:"foreignKey:VideoId"`
+	VideoId int64 `gorm:"not null"`
+}
+
+// Follow 用于维护用户关注关系，待之后完善
+type Follow struct {
 }
