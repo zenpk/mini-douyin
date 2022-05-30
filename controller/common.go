@@ -19,9 +19,9 @@ type Video struct {
 type Comment struct {
 	Id         int64  `json:"id,omitempty" gorm:"primaryKey"`
 	User       User   `json:"user" gorm:"foreignKey:UserId"`
-	UserId     int64  `gorm:"not null"` // 评论对应的用户 Id
+	UserId     int64  `gorm:"not null"` //评论对应的用户id
 	Video      Video  `gorm:"foreignKey:VideoId"`
-	VideoId    int64  `gorm:"not null"` // 评论对应的视频 Id
+	VideoId    int64  `gorm:"not null"` //评论对应的视频ID
 	Content    string `json:"content,omitempty" gorm:"not null"`
 	CreateDate string `json:"create_date,omitempty" gorm:"not null"`
 }
@@ -42,8 +42,4 @@ type Favorite struct {
 	UserId  int64 `gorm:"not null"`
 	Video   Video `gorm:"foreignKey:VideoId"`
 	VideoId int64 `gorm:"not null"`
-}
-
-// Follow 用于维护用户关注关系，待之后完善
-type Follow struct {
 }
