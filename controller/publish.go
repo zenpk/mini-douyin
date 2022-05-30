@@ -82,7 +82,7 @@ func PublishList(c *gin.Context) {
 	userIdStr := c.Query("user_id")
 	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
 	var videoList []Video
-	DB.Where("user_id=?", userId).Find(&videoList)
+	DB.Preload("Author").Where("user_id=?", userId).Find(&videoList)
 	c.JSON(http.StatusOK, VideoListResponse{
 		Response: Response{
 			StatusCode: 0,
