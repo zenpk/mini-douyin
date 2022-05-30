@@ -12,11 +12,13 @@ type FeedResponse struct {
 	NextTime  int64   `json:"next_time,omitempty"`
 }
 
-// Feed same demo video list for every request
+// Feed 推送最新的 30 个视频
 func Feed(c *gin.Context) {
+	var videoList []Video
+	DB.Preload("Author").Order("id desc").Limit(30).Find(&videoList)
 	c.JSON(http.StatusOK, FeedResponse{
 		Response:  Response{StatusCode: 0},
-		VideoList: DemoVideos,
+		VideoList: videoList,
 		NextTime:  time.Now().Unix(),
 	})
 }

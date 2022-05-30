@@ -7,10 +7,6 @@ import (
 	"strconv"
 )
 
-type FavoriteListResponse struct {
-	Response
-	FavoriteList []Favorite `json:"favorite_list,omitempty"`
-}
 
 // FavoriteAction 点赞操作
 func FavoriteAction(c *gin.Context) {

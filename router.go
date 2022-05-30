@@ -1,13 +1,13 @@
 package main
 
 import (
-	//"github.com/RaymondCode/simple-demo/controller"
-	"DouyinGo/controller"
 	"github.com/gin-gonic/gin"
+	"github.com/zenpk/mini-douyin/controller"
 )
 
 func initRouter(r *gin.Engine) {
-	controller.Init()
+	// connect to MySQL database
+	controller.ConnectDB()
 
 	// public directory is used to serve static resources
 	r.Static("/static", "./public")
