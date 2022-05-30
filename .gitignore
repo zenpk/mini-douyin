@@ -22,3 +22,10 @@ public/
 go.work
 
 .idea
+
+# 测试用的视频和封面
+*.mp4
+*.jpg
+
+# draw.io 备份文件
+*.drawio.bkp
