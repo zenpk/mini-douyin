@@ -18,7 +18,12 @@ type VideoListResponse struct {
 // Publish 前端传入视频、token
 func Publish(c *gin.Context) {
 	username := c.PostForm("token") // 这里的 Token 是用户名
-	// demo 里检查了用户是否存在，个人感觉没必要
+	if username == "" {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 1,
+			StatusMsg:  "You haven't logged in yet",
+		})
+	}
 
 	// 读取视频
 	data, err := c.FormFile("data")

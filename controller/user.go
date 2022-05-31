@@ -94,9 +94,15 @@ func Login(c *gin.Context) {
 }
 
 func UserInfo(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 1,
+			StatusMsg:  "You haven't logged in yet",
+		})
+	}
 	userIdStr := c.Query("user_id")
 	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
-	// demo 这里判断了 user 是否存在，但个人认为不用，因此省去
 	user := User{Id: userId}
 	DB.First(&user)
 	c.JSON(http.StatusOK, UserResponse{
