@@ -31,12 +31,16 @@ func RelationAction(c *gin.Context) {
 }
 
 func Follow(c *gin.Context) {
-	userIdStr := c.Query("user_id")      // UserA
+	// 因为前端没有正确传入 user_id，因此通过 token 查询
+	//userIdStr := c.Query("user_id")      // UserA
+	//userId, _ := strconv.ParseInt(userIdStr, 10, 64)
+	token := c.Query("token")
+	var user User
+	DB.Where("name=?", token).First(&user)
 	userIdToStr := c.Query("to_user_id") // UserB
-	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
 	userIdTo, _ := strconv.ParseInt(userIdToStr, 10, 64)
 	relation := Relation{
-		UserAId: userId,
+		UserAId: user.Id,
 		UserBId: userIdTo,
 	}
 	// 开启数据库事务，在 relations 中添加记录，在 users 中更改关注数
@@ -47,7 +51,7 @@ func Follow(c *gin.Context) {
 			return err
 		}
 		// 增加关注数、被关注数
-		tx.Model(&User{}).Where("id=?", userId).UpdateColumn("follow_count", gorm.Expr("follow_count + ?", 1))
+		tx.Model(&User{}).Where("id=?", user.Id).UpdateColumn("follow_count", gorm.Expr("follow_count + ?", 1))
 		tx.Model(&User{}).Where("id=?", userIdTo).UpdateColumn("follower_count", gorm.Expr("follower_count + ?", 1))
 		// 返回 nil 提交事务
 		return nil
@@ -59,19 +63,23 @@ func Follow(c *gin.Context) {
 }
 
 func Unfollow(c *gin.Context) {
-	userIdStr := c.Query("user_id")      // UserA
+	// 因为前端没有正确传入 user_id，因此通过 token 查询
+	//userIdStr := c.Query("user_id")      // UserA
+	//userId, _ := strconv.ParseInt(userIdStr, 10, 64)
 	userIdToStr := c.Query("to_user_id") // UserB
-	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
 	userIdTo, _ := strconv.ParseInt(userIdToStr, 10, 64)
+	token := c.Query("token")
+	var user User
+	DB.Where("name=?", token).First(&user)
 	// 开启数据库事务，在 relations 中添加记录，在 users 中更改关注数
 	DB.Transaction(func(tx *gorm.DB) error {
 		// 删除关注关系
-		if err := tx.Where("user_a_id=?", userId).Where("user_b_id=?", userIdTo).Delete(&Relation{}).Error; err != nil {
+		if err := tx.Where("user_a_id=?", user.Id).Where("user_b_id=?", userIdTo).Delete(&Relation{}).Error; err != nil {
 			// 返回任何错误都会回滚事务
 			return err
 		}
 		// 减少关注数、被关注数
-		tx.Model(&User{}).Where("id=?", userId).UpdateColumn("follow_count", gorm.Expr("follow_count - ?", 1))
+		tx.Model(&User{}).Where("id=?", user.Id).UpdateColumn("follow_count", gorm.Expr("follow_count - ?", 1))
 		tx.Model(&User{}).Where("id=?", userIdTo).UpdateColumn("follower_count", gorm.Expr("follower_count - ?", 1))
 		// 返回 nil 提交事务
 		return nil
@@ -84,11 +92,18 @@ func Unfollow(c *gin.Context) {
 
 // FollowList 展示查询用户的关注列表
 func FollowList(c *gin.Context) {
-	userIdStr := c.Query("user_id")
-	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
+	token := c.Query("token") // 用户名
+	if token == "" {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 1,
+			StatusMsg:  "You haven't logged in yet",
+		})
+	}
+	var user User
+	DB.Where("name=?", token).First(&user)
 	var followList []Relation
 	// 加载 UserB 即加载当前用户关注的用户
-	DB.Preload("UserB").Where("user_a_id=?", userId).Find(&followList)
+	DB.Preload("UserB").Where("user_a_id=?", user.Id).Find(&followList)
 	// 这里直接暴力复制了，不知道 Go 语言有无更好的方法可以提取结构体数组中的元素
 	followUserList := make([]User, len(followList))
 	for i, f := range followList {
@@ -104,20 +119,27 @@ func FollowList(c *gin.Context) {
 
 // FollowerList 展示查询用户的粉丝列表
 func FollowerList(c *gin.Context) {
-	userIdStr := c.Query("user_id")
-	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
-	var followList []Relation
+	token := c.Query("token") // 用户名
+	if token == "" {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 1,
+			StatusMsg:  "You haven't logged in yet",
+		})
+	}
+	var user User
+	DB.Where("name=?", token).First(&user)
+	var followerList []Relation
 	// 加载 UserA 即加载当前用户的粉丝
-	DB.Preload("UserA").Where("user_b_id=?", userId).Find(&followList)
+	DB.Preload("UserA").Where("user_b_id=?", user.Id).Find(&followerList)
 	// 这里直接暴力复制了，不知道 Go 语言有无更好的方法可以提取结构体数组中的元素
-	followUserList := make([]User, len(followList))
-	for i, f := range followList {
-		followUserList[i] = f.UserA
+	followerUserList := make([]User, len(followerList))
+	for i, f := range followerList {
+		followerUserList[i] = f.UserA
 	}
 	c.JSON(http.StatusOK, UserListResponse{
 		Response: Response{
 			StatusCode: 0,
 		},
-		UserList: followUserList,
+		UserList: followerUserList,
 	})
 }
