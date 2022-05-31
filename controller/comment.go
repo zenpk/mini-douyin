@@ -132,7 +132,7 @@ func CommentList(c *gin.Context) {
 	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
 
 	var commentList []Comment
-	DB.Where("video_id=?", videoId).Find(&commentList)
+	DB.Preload("User").Where("video_id=?", videoId).Find(&commentList)
 
 	c.JSON(http.StatusOK, CommentListResponse{
 		Response:    Response{StatusCode: 0, StatusMsg: "success"},

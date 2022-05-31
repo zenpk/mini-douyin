@@ -7,7 +7,6 @@ import (
 	"strconv"
 )
 
-
 // FavoriteAction 点赞操作
 func FavoriteAction(c *gin.Context) {
 	token := c.Query("token")
@@ -65,15 +64,20 @@ func DeleteFavorite(c *gin.Context) {
 // AddFavorite 点赞
 func AddFavorite(c *gin.Context) {
 	//获取用户的userId和videoId
-	userid := c.Query("user_id")
-	userId, _ := strconv.ParseInt(userid, 10, 64)
+	//userid := c.Query("user_id")
+	//userId, _ := strconv.ParseInt(userid, 10, 64)
 
+	// 前端并没有传入 user_id，改为通过 token 查询
+	token := c.Query("token")
 	videoIdStr := c.Query("video_id")
 	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
 
+	var user User
+	DB.Where("name=?", token).First(&user)
+
 	//在favorites添加记录
 	favorite := Favorite{
-		UserId:  userId,
+		UserId:  user.Id,
 		VideoId: videoId,
 	}
 
