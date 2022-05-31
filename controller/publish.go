@@ -25,6 +25,9 @@ func Publish(c *gin.Context) {
 		})
 	}
 
+	// 视频标题
+	title := c.PostForm("title")
+
 	// 读取视频
 	data, err := c.FormFile("data")
 	if err != nil {
@@ -47,6 +50,7 @@ func Publish(c *gin.Context) {
 		UserId:   user.Id,
 		PlayUrl:  playUrl,
 		CoverUrl: coverUrl,
+		Title:    title,
 	}
 	DB.Create(&video)
 	finalName := fmt.Sprintf("%d_%d_%s", user.Id, video.Id, filename) // 保存的文件名，为防止文件名冲突，增加一项 videoId
