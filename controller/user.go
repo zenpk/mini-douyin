@@ -30,7 +30,7 @@ type UserLoginResponse struct {
 
 type UserResponse struct {
 	Response
-	User []User `json:"user"`
+	User User `json:"user"`
 }
 
 // BCryptPassword 对密码加密
@@ -109,9 +109,8 @@ func UserInfo(c *gin.Context) {
 	// 查询数据库判断是否关注了此用户
 	rows := DB.Find(&Relation{}).Where("user_a_id=?", userA.Id).Where("user_b_id=?", userB.Id).RowsAffected
 	userB.IsFollow = rows > 0 // 查询到关注记录，则返回 true
-	userList := []User{userB}
 	c.JSON(http.StatusOK, UserResponse{
 		Response: Response{StatusCode: 0},
-		User:     userList,
+		User:     userB,
 	})
 }
