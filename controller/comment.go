@@ -15,13 +15,14 @@ type CommentListResponse struct {
 
 // CommentAction 发表评论、删除评论
 func CommentAction(c *gin.Context) {
-	token := c.Query("token")
+	user, tokenValid := GetUserByToken(c)
 	//判断用户是否登录
-	if token == "" {
+	if !tokenValid {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
 	action := c.Query("action_type")
 	actionType, err := strconv.Atoi(action)
@@ -34,21 +35,29 @@ func CommentAction(c *gin.Context) {
 	}
 
 	if actionType == 1 {
-		PostComment(c)
+		PostComment(c, user)
 	} else {
-		DeleteComment(c)
+		DeleteComment(c, user)
 	}
 
 }
 
 // DeleteComment 删除评论
-func DeleteComment(c *gin.Context) {
-	//获取需要删除的评论Id
-	commentIdStr := c.Query("comment_id")
-	commentId, _ := strconv.ParseInt(commentIdStr, 10, 64)
+func DeleteComment(c *gin.Context, user User) {
+	// 获取需要删除的评论 Id 和对应视频 Id
+	commentId := GetId(c, "comment_id")
+	videoId := GetId(c, "video_id")
 
-	videoIdStr := c.Query("video_id")
-	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
+	// 改进：判断该评论是否属于此用户，不属于则返回删除失败
+	var comment Comment
+	DB.Where("id=?", commentId).First(&comment)
+	if comment.UserId != user.Id {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 1,
+			StatusMsg:  "you cannot delete this comment",
+		})
+		return
+	}
 
 	//（1）直接在数据库中删除（2）comment中设置一个deleted 列，用bool表示是否删除
 	//目前实现的是第一种
@@ -63,17 +72,13 @@ func DeleteComment(c *gin.Context) {
 		return nil
 	})
 	c.JSON(http.StatusOK, Response{
-		StatusCode: 1,
+		StatusCode: 0,
 		StatusMsg:  "comment deleted successfully",
 	})
 }
 
 // PostComment 发表评论
-func PostComment(c *gin.Context) {
-	username := c.Query("token")
-	//根据用户名查找用户
-	var user User
-	DB.Where("name=?", username).First(&user)
+func PostComment(c *gin.Context, user User) {
 	//读取评论内容
 	context := c.Query("comment_text")
 	//用户未输入评论内容
@@ -84,8 +89,7 @@ func PostComment(c *gin.Context) {
 		})
 		return
 	}
-	videoIdStr := c.Query("video_id")
-	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
+	videoId := GetId(c, "video_id")
 	//日期MM-DD
 	timeFormat := time.Now().Format("01-02")
 	comment := Comment{
@@ -111,8 +115,9 @@ func PostComment(c *gin.Context) {
 	commentList := []Comment{comment}
 
 	c.JSON(http.StatusOK, CommentListResponse{
-		Response: Response{StatusCode: 0,
-			StatusMsg: "comment posted successfully"},
+		Response: Response{
+			StatusCode: 0,
+			StatusMsg:  "comment posted successfully"},
 		CommentList: commentList,
 	})
 }
@@ -126,16 +131,19 @@ func CommentList(c *gin.Context) {
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
 
-	videoIdStr := c.Query("video_id")
-	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
+	videoId := GetId(c, "video_id")
 
 	var commentList []Comment
 	DB.Preload("User").Where("video_id=?", videoId).Find(&commentList)
 
 	c.JSON(http.StatusOK, CommentListResponse{
-		Response:    Response{StatusCode: 0, StatusMsg: "success"},
+		Response: Response{
+			StatusCode: 0,
+			StatusMsg:  "success",
+		},
 		CommentList: commentList,
 	})
 }

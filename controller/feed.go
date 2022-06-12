@@ -14,9 +14,7 @@ type FeedResponse struct {
 
 // Feed 推送最新的 30 个视频
 func Feed(c *gin.Context) {
-	token := c.Query("token") // token 是用户名
-	var user User
-	DB.Where("name=?", token).First(&user)
+	user, _ := GetUserByToken(c) // 未登录也可推送，因此不判断 token 有效性
 	var videoList []Video
 	DB.Preload("Author").Order("id desc").Limit(30).Find(&videoList)
 	for i, v := range videoList {

@@ -14,31 +14,28 @@ type UserListResponse struct {
 
 // RelationAction 关注取关操作
 func RelationAction(c *gin.Context) {
-	token := c.Query("token") // 用户名
-	if token == "" {
+	user, tokenValid := GetUserByToken(c)
+	if !tokenValid {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
 	actionStr := c.Query("action_type") // 1:关注，2:取关
 	action, _ := strconv.Atoi(actionStr)
 	if action == 1 {
-		Follow(c)
+		Follow(c, user)
 	} else {
-		Unfollow(c)
+		Unfollow(c, user)
 	}
 }
 
-func Follow(c *gin.Context) {
-	// 因为前端没有正确传入 user_id，因此通过 token 查询
-	//userIdStr := c.Query("user_id")      // UserA
-	//userId, _ := strconv.ParseInt(userIdStr, 10, 64)
-	token := c.Query("token")
-	var user User
-	DB.Where("name=?", token).First(&user)
-	userIdToStr := c.Query("to_user_id") // UserB
-	userIdTo, _ := strconv.ParseInt(userIdToStr, 10, 64)
+func Follow(c *gin.Context, user User) {
+	// 因为前端没有正确传入 user_id，因此不获取 user_id
+
+	userIdTo := GetId(c, "to_user_id") // UserB
+
 	relation := Relation{
 		UserAId: user.Id,
 		UserBId: userIdTo,
@@ -62,15 +59,11 @@ func Follow(c *gin.Context) {
 	})
 }
 
-func Unfollow(c *gin.Context) {
-	// 因为前端没有正确传入 user_id，因此通过 token 查询
-	//userIdStr := c.Query("user_id")      // UserA
-	//userId, _ := strconv.ParseInt(userIdStr, 10, 64)
-	userIdToStr := c.Query("to_user_id") // UserB
-	userIdTo, _ := strconv.ParseInt(userIdToStr, 10, 64)
-	token := c.Query("token")
-	var user User
-	DB.Where("name=?", token).First(&user)
+func Unfollow(c *gin.Context, user User) {
+	// 因为前端没有正确传入 user_id，因此不获取 user_id
+
+	userIdTo := GetId(c, "to_user_id") // UserB
+
 	// 开启数据库事务，在 relations 中添加记录，在 users 中更改关注数
 	DB.Transaction(func(tx *gorm.DB) error {
 		// 删除关注关系
@@ -92,15 +85,14 @@ func Unfollow(c *gin.Context) {
 
 // FollowList 展示查询用户的关注列表
 func FollowList(c *gin.Context) {
-	token := c.Query("token") // 用户名
-	if token == "" {
+	user, tokenValid := GetUserByToken(c)
+	if !tokenValid {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
-	var user User
-	DB.Where("name=?", token).First(&user)
 	var followList []Relation
 	// 加载 UserB 即加载当前用户关注的用户
 	DB.Preload("UserB").Where("user_a_id=?", user.Id).Find(&followList)
@@ -119,15 +111,14 @@ func FollowList(c *gin.Context) {
 
 // FollowerList 展示查询用户的粉丝列表
 func FollowerList(c *gin.Context) {
-	token := c.Query("token") // 用户名
-	if token == "" {
+	user, tokenValid := GetUserByToken(c)
+	if !tokenValid {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
-	var user User
-	DB.Where("name=?", token).First(&user)
 	var followerList []Relation
 	// 加载 UserA 即加载当前用户的粉丝
 	DB.Preload("UserA").Where("user_b_id=?", user.Id).Find(&followerList)

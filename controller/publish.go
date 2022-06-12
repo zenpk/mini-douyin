@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 )
 
 type VideoListResponse struct {
@@ -17,17 +16,16 @@ type VideoListResponse struct {
 
 // Publish 前端传入视频、token
 func Publish(c *gin.Context) {
-	username := c.PostForm("token") // 这里的 Token 是用户名
-	if username == "" {
+	user, tokenValid := GetUserByToken(c)
+	if !tokenValid {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
-
 	// 视频标题
 	title := c.PostForm("title")
-
 	// 读取视频
 	data, err := c.FormFile("data")
 	if err != nil {
@@ -39,8 +37,6 @@ func Publish(c *gin.Context) {
 	}
 	filename := filepath.Base(data.Filename)
 
-	var user User // 根据用户名查找用户
-	DB.Where("name=?", username).First(&user)
 	// 因为存储的文件名需要包含 videoId，所以先保存到数据库，利用 Id 自增特性获取 videoId
 	// 相关信息存入数据库
 	playUrl := ServerAddr + "/static/videos/"
@@ -88,8 +84,7 @@ func Publish(c *gin.Context) {
 // PublishList 显示当前用户投稿的所有视频，目前的实现方式是直接从所有视频的表里根据 user_id 选取
 // 效率可能较低？
 func PublishList(c *gin.Context) {
-	userIdStr := c.Query("user_id")
-	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
+	userId := GetId(c, "user_id")
 	var videoList []Video
 	DB.Where("user_id=?", userId).Find(&videoList)
 	c.JSON(http.StatusOK, VideoListResponse{

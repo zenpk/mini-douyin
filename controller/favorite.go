@@ -7,15 +7,18 @@ import (
 	"strconv"
 )
 
+// 改进：无论是点赞还是取消赞都通过 token 判断当前用户身份
+
 // FavoriteAction 点赞操作
 func FavoriteAction(c *gin.Context) {
-	token := c.Query("token")
+	user, tokenValid := GetUserByToken(c)
 	//判断用户是否登录
-	if token == "" {
+	if !tokenValid {
 		c.JSON(http.StatusOK, Response{
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
 	//赞请求的具体操作
 	action := c.Query("action_type")
@@ -29,20 +32,29 @@ func FavoriteAction(c *gin.Context) {
 	}
 
 	if actionType == 1 {
-		AddFavorite(c)
+		AddFavorite(c, user)
 	} else {
-		DeleteFavorite(c)
+		DeleteFavorite(c, user)
 	}
 
 }
 
 // DeleteFavorite 取消赞
-func DeleteFavorite(c *gin.Context) {
+func DeleteFavorite(c *gin.Context, user User) {
 	//获取用户的userId和videoId
-	userid := c.Query("user_id")
-	userId, _ := strconv.ParseInt(userid, 10, 64)
-	videoIdStr := c.Query("video_id")
-	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
+	userIdStr := c.Query("user_id")
+	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
+
+	// 如果请求的用户 id 和实际登录的用户不符，则直接返回
+	if userId != user.Id {
+		c.JSON(http.StatusOK, Response{
+			StatusCode: 0,
+			StatusMsg:  "You don't have the permission",
+		})
+		return
+	}
+
+	videoId := GetId(c, "video_id")
 
 	//开启数据库事务，在favorites中删除记录，在videos中更改点赞数目
 	DB.Transaction(func(tx *gorm.DB) error {
@@ -62,18 +74,8 @@ func DeleteFavorite(c *gin.Context) {
 }
 
 // AddFavorite 点赞
-func AddFavorite(c *gin.Context) {
-	//获取用户的userId和videoId
-	//userid := c.Query("user_id")
-	//userId, _ := strconv.ParseInt(userid, 10, 64)
-
-	// 前端并没有传入 user_id，改为通过 token 查询
-	token := c.Query("token")
-	videoIdStr := c.Query("video_id")
-	videoId, _ := strconv.ParseInt(videoIdStr, 10, 64)
-
-	var user User
-	DB.Where("name=?", token).First(&user)
+func AddFavorite(c *gin.Context, user User) {
+	videoId := GetId(c, "video_id")
 
 	//在favorites添加记录
 	favorite := Favorite{
@@ -107,10 +109,9 @@ func FavoriteList(c *gin.Context) {
 			StatusCode: 1,
 			StatusMsg:  "You haven't logged in yet",
 		})
+		return
 	}
-
-	userIdStr := c.Query("user_id")
-	userId, _ := strconv.ParseInt(userIdStr, 10, 64)
+	userId := GetId(c, "user_id")
 
 	var favoriteList []Favorite
 	var videoList []Video

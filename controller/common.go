@@ -13,8 +13,8 @@ type Video struct {
 	CoverUrl      string `json:"cover_url,omitempty" gorm:"not null"`
 	FavoriteCount int64  `json:"favorite_count,omitempty"`
 	CommentCount  int64  `json:"comment_count,omitempty"`
-	IsFavorite    bool   `json:"is_favorite,omitempty"`
-	Title         string `json:"title,omitempty"` // demo 里没有 title
+	IsFavorite    bool   `json:"is_favorite,omitempty" gorm:"-:all"` // IsFavorite 是根据 favorites 表查询得到的，不需要存储
+	Title         string `json:"title,omitempty"`                    // demo 里没有 title
 }
 
 type Comment struct {
@@ -33,7 +33,8 @@ type User struct {
 	Password      string `gorm:"not null"`
 	FollowCount   int64  `json:"follow_count,omitempty"`
 	FollowerCount int64  `json:"follower_count,omitempty"`
-	IsFollow      bool   `json:"is_follow,omitempty"`
+	IsFollow      bool   `json:"is_follow,omitempty" gorm:"-:all"` // IsFollow 是根据 relations 表查询得到的，不需要存储
+	Token         string `gorm:"unique;not null"`
 }
 
 // Favorite 记录用户点赞的视频
