@@ -1,6 +1,8 @@
 # mini-douyin
 字节跳动青训营抖音项目
 
+**本项目已过期，请查看改进版：[zenpk/mini-douyin-ex](https://github.com/zenpk/mini-douyin-ex)**
+
 ## IP、端口设置
 服务器 IP：101.43.179.27
 

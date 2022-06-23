@@ -3,6 +3,7 @@ module github.com/zenpk/mini-douyin
 go 1.17
 
 require (
+	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/google/uuid v1.3.0
 	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
